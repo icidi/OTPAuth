@@ -1,0 +1,18 @@
+example.com:8443 {
+        ...
+
+        @otpauth path /external/path/to/otpauth /external/path/to/otpauth/*
+        handle @otpauth {
+                reverse_proxy 127.0.0.1:9393
+        }
+
+        @protected path /protected/path /protected/path/*
+        handle @protected {
+                forward_auth 127.0.0.1:9393 {
+                        uri /otpauth/forwardauth?external_url=https://example.com:{http.request.port}/external/path/to/otpauth
+                }
+                reverse_proxy 127.0.0.1:8080
+        }
+
+        ...
+}

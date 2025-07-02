@@ -1,0 +1,22 @@
+{
+    "users": {
+        "admin": {
+            "disabled": false,
+            "totp": {
+                "key": "JBSWY3DPEHPK3PXPE6A4",
+                "digits": 6,
+                "algorithm": "sha1"
+            },
+            "password": {
+                "algorithm": "sha256",
+                "hash": "d4d3f79c671ad9d84896741c15f824833f86577042229e68f153b9b80c1bfb8e",
+                "comment": "password1 for the above hash"
+            },
+            "acl": [
+                "!/admin*",
+                "/foo",
+                "/protected/path/*"
+            ]
+        }
+    }
+}

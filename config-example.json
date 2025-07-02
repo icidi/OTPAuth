@@ -1,0 +1,19 @@
+{
+    "loglevel": "info",
+    "port": 9393,
+    "domain":"example.com",
+    "extpath":"/external/path/to/otpauth",
+    "cookie": {
+        "name": "otpauthsession",
+        "max-age": 86400,
+        "httponly": true,
+        "secure": true,
+        "samesite": "lax"
+    },
+    "inactivity": 900,
+    "attempt": 3,
+    "findtime": 300,
+    "bantime": 900,
+    "autoflush": 900,
+    "otpwindow": 3
+}
