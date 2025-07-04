@@ -3,6 +3,11 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import logging
 import urllib.parse as urlp
 
+# import to declare class variables only
+from config import Config
+from usermanager import UserManager
+from sessionmanager import SessionManager
+
 import timer
 import webpage
 
@@ -10,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 class HttpRequestHandler(BaseHTTPRequestHandler):
 
-    config = None
-    users = None
-    sessions = None
+    config: Config = None
+    users: UserManager = None
+    sessions: SessionManager = None
 
     lut = {}
 
@@ -51,6 +56,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         host = self.getHeader("X-Forwarded-Host")
         if host == None:
             host = self.getHeader("Host", "")
+        self.host = host
         domain = host.split(":", 1)[0]
         if domain == "" or not domain.endswith(self.config.getDomain()):
             self.setResponse(400)
@@ -73,6 +79,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         session = c.get(self.config.getCookie(["name"]), None)
         if session != None:
             session = session.value
+        self.session = session
             
         path = self.getHeader("X-Forwarded-Uri")
 
@@ -111,6 +118,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         ip = self.getHeader("X-Forwarded-For")
         if ip == None:
             ip = self.client_address[0]
+        self.ip = ip
         
         forwardedMethod = self.getHeader("X-Forwarded-Method")
 
@@ -129,11 +137,6 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self.setResponse(401)
             return
 
-        # get client ip
-        # ip = self.getHeader("X-Forwarded-For")
-        # if ip == None:
-        #     ip = self.client_address[0]
-
         # check if client is banned
         if self.sessions.isBanned(ip, host):
             self.setResponse(403, True)
@@ -147,18 +150,18 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
 
         # generate the redirection URL which is used after successful login
         # in this order: "r=" query in the request URL, Referer header, <X-Forwarded-Host + X-Forwarded-Uri>, None
-        referrer = query.get("r", None)
-        if referrer != None:
-            referrer = referrer[0]
+        redirection = query.get("r", None)
+        if redirection != None:
+            redirection = redirection[0]
         else:
-            referrer = self.getHeader("Referer")
-        if referrer == None:
+            redirection = self.getHeader("Referer")
+        if redirection == None:
             proto = self.getHeader("X-Forwarded-Proto")
             forwardedHost = self.getHeader("X-Forwarded-Host")
             # path is retrieved before checking if session is valid
             # after successful login, only redirect if it is a ForwardAuth request, so host and path do not fallback
             if path != None and proto != None and forwardedHost != None:
-                referrer = proto + "://" + forwardedHost + path
+                redirection = proto + "://" + forwardedHost + path
 
         # generate the URL to login page
         try:
@@ -173,8 +176,8 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
 
         loginUrl = externalUrl + "/portal/login"
 
-        if referrer != None:
-            loginUrl = loginUrl + "?r=" + referrer
+        if redirection != None:
+            loginUrl = loginUrl + "?r=" + redirection
         
         # redirect to login page
         # forwardedMethod = self.getHeader("X-Forwarded-Method")

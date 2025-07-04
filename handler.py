@@ -30,7 +30,7 @@ def handlePortal(req: HttpRequestHandler, method="GET"):
 @HttpRequestHandler.registerPath("/portal/login")
 def handleLogin(req: HttpRequestHandler, method="GET", isValidSession=True):
 
-    if method =="GET":
+    if method == "GET":
         req.setResponse(200, True)
         if isValidSession:
             req.wfile.write(webpage.loginSuccessful)
@@ -88,19 +88,39 @@ def handleLogin(req: HttpRequestHandler, method="GET", isValidSession=True):
                 req.wfile.write(webpage.loginSuccessful)
         
         else:
-            host = req.getHeader("X-Forwarded-Host")
-            if host == None:
-                host = req.getHeader("Host", "")
-            ip = req.getHeader("X-Forwarded-For")
-            if ip == None:
-                ip = req.client_address[0]
-            req.sessions.addBlacklist(ip, host, req.config.getConfigItem("attempt"), req.config.getConfigItem("findtime"), req.config.getConfigItem("bantime"))
-            if req.sessions.isBanned(ip, host):
+            req.sessions.addBlacklist(req.ip, req.host, req.config.getConfigItem("attempt"), req.config.getConfigItem("findtime"), req.config.getConfigItem("bantime"))
+            if req.sessions.isBanned(req.ip, req.host):
                 req.setResponse(403, True)
                 req.wfile.write(webpage.forbidden)
             else:
                 req.setResponse(401, True)
                 req.wfile.write(webpage.loginFailed)
+
+    else:
+        req.setResponse(400)
+
+
+@HttpRequestHandler.registerPath("/portal/logout")
+def handleLogout(req: HttpRequestHandler, method="GET"):
+
+    # only requests with a valid session are handled here
+    # those without a valid session will be redirected to login page at first, which is expected
+    if method == "GET" or method == "POST":
+        logging.info("User: %s requested to logout", req.sessions.getUsername(req.session))
+        req.sessions.delete(req.session)
+
+        proto = req.getHeader("X-Forwarded-Proto")
+        if proto != None:
+            proto = proto + "://"
+        else:
+            proto = "//"
+        externalUrl = proto + req.host + req.config.getExternalPath()
+        loginUrl = externalUrl + "/portal/login"
+
+        if method == "GET":
+            req.setResponse(302, False, {"Location": loginUrl})
+        else:
+            req.setResponse(303, False, {"Location": loginUrl})
 
     else:
         req.setResponse(400)
